@@ -79,57 +79,20 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearching = false;
-  bool _isLoadingLocation = true;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    _loadDefaultLocation();
   }
 
-  Future<void> _getCurrentLocation() async {
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        setState(() {
-          _isLoadingLocation = false;
-        });
-        return;
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          setState(() {
-            _isLoadingLocation = false;
-          });
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        setState(() {
-          _isLoadingLocation = false;
-        });
-        return;
-      }
-
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      );
-
-      if (mounted) {
-        context.read<WeatherProvider>().fetchWeatherByLocation();
-      }
-    } catch (e) {
-      debugPrint('Error getting location: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingLocation = false;
-        });
-      }
+  Future<void> _loadDefaultLocation() async {
+    if (mounted) {
+      context.read<WeatherProvider>().fetchWeatherByCity('New Delhi, India');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -247,7 +210,7 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
           ),
           Consumer<WeatherProvider>(
             builder: (context, weatherProvider, child) {
-              if (_isLoadingLocation || weatherProvider.isLoading) {
+              if (_isLoading || weatherProvider.isLoading) {
                 return const LoadingShimmer();
               }
 
